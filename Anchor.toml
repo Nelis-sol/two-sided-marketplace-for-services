@@ -5,13 +5,16 @@ seeds = false
 skip-lint = false
 
 [programs.localnet]
-two_sided_marketplace_for_services = "EQY5RoA9unEGkvY8DQVK5v7qq1AMHKSKNQmrkQ39wmFb"
+two_sided_marketplace_for_services = "4GVYCsgaxtqHW61wddpKtthbFZqvXhREghgE9C45YV7w"
+
+[programs.devnet]
+two_sided_marketplace_for_services = "4GVYCsgaxtqHW61wddpKtthbFZqvXhREghgE9C45YV7w"
 
 [registry]
 url = "https://api.apr.dev"
 
 [provider]
-cluster = "Localnet"
+cluster = "devnet"
 wallet = "/Users/nielsoskam/.config/solana/id.json"
 
 [scripts]

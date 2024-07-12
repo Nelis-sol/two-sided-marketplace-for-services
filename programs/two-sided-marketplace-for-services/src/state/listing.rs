@@ -1,7 +1,14 @@
 use anchor_lang::prelude::*;
 
 #[account]
-pub struct ListingState {
-    pub id: u64,
-    pub bump: u8,
+pub struct Listing {
+    pub lister: Pubkey,  // 32 byte
+    pub mint: Pubkey,   // 32 byte
+    pub price: u64,     // 8 byte
+    pub seed: u64,      // 8 byte
+    pub bump: u8,       // 1 byte
+}
+
+impl Space for Listing {
+    const INIT_SPACE: usize = 8 + 32 + 32 + 8 + 8 + 1;
 }
