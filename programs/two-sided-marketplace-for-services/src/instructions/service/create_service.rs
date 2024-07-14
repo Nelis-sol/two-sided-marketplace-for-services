@@ -1,8 +1,13 @@
 use anchor_lang::prelude::*;
 use mpl_core::{
+    PermanentFreezeDelegatePlugin,
     instructions::{CreateV1Cpi, CreateV1InstructionArgs},
-    types::DataState,
+    types::{DataState, PluginAuthorityPair, PluginAuthority, Plugin, Royalties, Creator, RuleSet, PermanentFreezeDelegate},
+    advanced_types::{AuthorityType, BaseAuthority, BasePlugin},
 };
+use mpl_core::types::PluginAuthority::Address;
+use crate::constants::ROYALTY_FEE_BPS;
+
 
 #[derive(Accounts)]
 pub struct CreateService<'info> {
@@ -29,7 +34,27 @@ pub struct CreateService<'info> {
 
 impl<'info> CreateService<'info> {
 
-    pub fn create_service(&mut self, args: CreateV1InstructionArgs) -> Result<()> {
+    pub fn create_service(&mut self, args: CreateV1Args) -> Result<()> {
+
+        let service_royalty = Royalties{
+            basis_points: ROYALTY_FEE_BPS,
+            creators: vec![Creator{address: self.payer.key(), percentage: 100}],
+            rule_set: RuleSet::None,
+        };
+
+        let royalty_plugin = PluginAuthorityPair {
+            plugin: Plugin::Royalties(service_royalty),
+            authority: None,
+        };
+
+
+        let freeze_plugin = PluginAuthorityPair {
+            plugin: Plugin::PermanentFreezeDelegate(PermanentFreezeDelegate{frozen: false}),
+            authority: Some(Address{
+                address: self.payer.key()
+            }),
+        };
+
 
         CreateV1Cpi {
             asset: &self.asset.to_account_info(),
@@ -45,7 +70,7 @@ impl<'info> CreateService<'info> {
                 data_state: DataState::AccountState,
                 name: args.name,
                 uri: args.uri,
-                plugins: None,
+                plugins: Some(vec![royalty_plugin, freeze_plugin]),
             },
         }
         .invoke()?;
@@ -57,11 +82,9 @@ impl<'info> CreateService<'info> {
 
 
 
-// #[derive(AnchorDeserialize, AnchorSerialize)]
-// pub struct CreateV1Args {
-//     pub name: String,
-//     pub uri: String,
-//     pub plugins: Option<Vec<PluginAuthorityPair>>,
-// }
-
-
+#[derive(AnchorDeserialize, AnchorSerialize)]
+pub struct CreateV1Args {
+    pub name: String,
+    pub uri: String,
+    // pub plugins: Option<Vec<PluginAuthorityPair>>,
+}

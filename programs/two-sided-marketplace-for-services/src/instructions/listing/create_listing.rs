@@ -1,70 +1,87 @@
 use anchor_lang::prelude::*;
-use crate::state::Listing;
-
-use anchor_spl::{
-    token_interface::{TokenAccount, Mint, TokenInterface, TransferChecked, transfer_checked},
-    associated_token::AssociatedToken
+use crate::state::{Listing, ListingArgs};
+use anchor_spl::token_interface::Mint;
+use mpl_core::{
+    instructions::{AddPluginV1Cpi, AddPluginV1InstructionArgs},
+    types::{PluginAuthority, TransferDelegate, Plugin},
 };
+use crate::constants::SEED_LISTING_ACCOUNT;
+
 
 #[derive(Accounts)]
-#[instruction(seed: u64)]
+#[instruction(args: ListingArgs)]
 pub struct CreateListing<'info> {
     #[account(mut)]
-    lister: Signer<'info>,
-    lister_mint: InterfaceAccount<'info, Mint>,
-    collection_mint: InterfaceAccount<'info, Mint>,
-    #[account(
-        mut,
-        associated_token::authority = lister,
-        associated_token::mint = lister_mint,
-    )]
-    lister_ata: InterfaceAccount<'info, TokenAccount>,
-    #[account(
-        init_if_needed,
-        payer = lister,
-        associated_token::mint = lister_mint,
-        associated_token::authority = listing,
-    )]
-    vault: InterfaceAccount<'info, TokenAccount>,
+    payer: Signer<'info>,
+    price_mint: InterfaceAccount<'info, Mint>,
     #[account(
         init,
-        payer = lister,
+        payer = payer,
         space = Listing::INIT_SPACE,
-        seeds = [lister_mint.key().as_ref(), seed.to_le_bytes().as_ref()],
+        seeds = [SEED_LISTING_ACCOUNT, payer.key().as_ref(), args.seed.to_le_bytes().as_ref()],
         bump
     )]
     listing: Account<'info, Listing>,
-    associated_token_program: Program<'info, AssociatedToken>,
     system_program: Program<'info, System>,
-    token_program: Interface<'info, TokenInterface>,
+
+    /// CHECK: Checked in mpl-core.
+    #[account(mut)]
+    pub asset: AccountInfo<'info>,
+
+    /// CHECK: Checked in mpl-core.
+    #[account(mut)]
+    pub collection: Option<AccountInfo<'info>>,
+
+    /// The owner or delegate of the asset.
+    pub authority: Option<Signer<'info>>,
+    
+    /// CHECK: Checked in mpl-core.
+    pub log_wrapper: Option<AccountInfo<'info>>,
+
+    /// CHECK: Checked in mpl-core.
+    #[account(address = mpl_core::ID)]
+    pub mpl_core: AccountInfo<'info>,
 }
 
 
 impl<'info> CreateListing<'info> {
 
-    pub fn create_listing(&mut self, price: u64, seed: u64, bumps: &CreateListingBumps) -> Result<()> {
+    pub fn create_listing(&mut self, args: ListingArgs, bumps: &CreateListingBumps) -> Result<()> {
         self.listing.set_inner(Listing {
-            lister: self.lister.key(),
-            mint: self.lister_mint.key(),
-            price,
-            seed,
+            lister: self.payer.key(),
+            mint: self.price_mint.key(),
+            price: args.price.expect("price is missing for this listing"),
+            seed: args.seed,
             bump: bumps.listing,
         });
 
         Ok(())
     }
 
-    pub fn deposit_nft(&mut self) -> Result<()> {
-        let accounts = TransferChecked {
-            from: self.lister_ata.to_account_info(),
-            to: self.vault.to_account_info(),
-            authority: self.lister.to_account_info(),
-            mint: self.lister_mint.to_account_info(),
+    pub fn delegate_transfer_authority(&mut self) -> Result<()> {
+
+        let transfer_delegate_plugin = AddPluginV1InstructionArgs {
+            plugin: Plugin::TransferDelegate(TransferDelegate{}),
+            init_authority: Some(PluginAuthority::Address { address: self.listing.key() }),
         };
 
-        let cpi_ctx = CpiContext::new(self.token_program.to_account_info(), accounts);
+        AddPluginV1Cpi {
+            asset: &self.asset.to_account_info(),
+            collection: self.collection.as_ref(),
+            authority: self.authority.as_deref(),
+            payer: &self.payer.to_account_info(),
+            system_program: &self.system_program.to_account_info(),
+            log_wrapper: self.log_wrapper.as_ref(),
+            __program: &self.mpl_core,
+            __args: transfer_delegate_plugin,
+        }
+        .invoke()?;
 
-        transfer_checked(cpi_ctx, 1, self.lister_mint.decimals)
+        Ok(())
+
     }
 
 }
+
+
+

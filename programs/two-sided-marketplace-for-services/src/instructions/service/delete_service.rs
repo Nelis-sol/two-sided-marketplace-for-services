@@ -37,14 +37,12 @@ impl<'info> DeleteService<'info> {
             system_program: Some(&self.system_program.to_account_info()),
             log_wrapper: self.log_wrapper.as_ref(),
             __args: mpl_core::instructions::BurnV1InstructionArgs {
-                compression_proof: args.compression_proof,
+                compression_proof: None,
             },
-
-
         }
         .invoke()?;
 
-        Ok(())
+    Ok(())
 
     }
 

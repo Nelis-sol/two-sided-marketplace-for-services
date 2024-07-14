@@ -7,8 +7,10 @@ use mpl_core::instructions::{
 
 mod instructions;
 use instructions::*;
+mod constants;
 
 mod state;
+use state::ListingArgs;
 
 
 declare_id!("4GVYCsgaxtqHW61wddpKtthbFZqvXhREghgE9C45YV7w");
@@ -19,7 +21,7 @@ pub mod two_sided_marketplace_for_services {
 
     /// 01. Services (description / service agreements)
 
-    pub fn create_service(ctx: Context<CreateService>, args: CreateV1InstructionArgs) -> Result<()> {
+    pub fn create_service(ctx: Context<CreateService>, args: CreateV1Args) -> Result<()> {
         ctx.accounts.create_service(args)
     }
 
@@ -34,32 +36,25 @@ pub mod two_sided_marketplace_for_services {
 
     /// 02. Listing (list a service)
     
-    pub fn create_listing(ctx: Context<CreateListing>, price: u64, seed: u64) -> Result<()> {
-        ctx.accounts.create_listing(price, seed, &ctx.bumps)
+    pub fn create_listing(ctx: Context<CreateListing>, args: ListingArgs) -> Result<()> {
+        ctx.accounts.create_listing(args, &ctx.bumps)?;
+        ctx.accounts.delegate_transfer_authority()
     }
 
-    pub fn update_listing(ctx: Context<UpdateListing>, price: u64, seed: u64) -> Result<()> {
-        ctx.accounts.update_listing(price, seed)
+    pub fn update_listing(ctx: Context<UpdateListing>, args: ListingArgs) -> Result<()> {
+        ctx.accounts.update_listing(args)
     }
 
-    pub fn delete_listing(ctx: Context<DeleteListing>, seed: u64) -> Result<()> {
-        ctx.accounts.withdraw_nft(seed)
+    pub fn delete_listing(ctx: Context<DeleteListing>, args: ListingArgs) -> Result<()> {
+        ctx.accounts.withdraw_transfer_authority(args)
     }
 
 
     /// 03. Buying (buy a service)
     
-    pub fn buy_now(ctx: Context<BuyNow>, seed: u64) -> Result<()> {
-        ctx.accounts.send_sol()?;
-        ctx.accounts.send_nft(seed)?;
-        ctx.accounts.close_mint_vault(seed)
-    }
-
-
-    /// 04. Selling (sell a service)
-
-    pub fn sell_now(ctx: Context<SellNow>) -> Result<()> {
-        ctx.accounts.sell_now()
+    pub fn buy_now(ctx: Context<BuyNow>, args: ListingArgs) -> Result<()> {
+        ctx.accounts.send_payment()?;
+        ctx.accounts.send_nft(args)
     }
 
 

@@ -12,3 +12,10 @@ pub struct Listing {
 impl Space for Listing {
     const INIT_SPACE: usize = 8 + 32 + 32 + 8 + 8 + 1;
 }
+
+
+#[derive(AnchorDeserialize, AnchorSerialize)]
+pub struct ListingArgs {
+    pub seed: u64,
+    pub price: Option<u64>,
+}

@@ -1,49 +1,47 @@
 use anchor_lang::prelude::*;
-use crate::state::Listing;
+use crate::state::{Listing, ListingArgs};
 
-use anchor_spl::{
-    token_interface::{TokenAccount, Mint, TokenInterface}, 
-    associated_token::AssociatedToken
-};
+use anchor_spl::token_interface::Mint;
+use crate::constants::SEED_LISTING_ACCOUNT;
 
 #[derive(Accounts)]
-#[instruction(seed: u64)]
+#[instruction(args: ListingArgs)]
 pub struct UpdateListing<'info> {
     #[account(mut)]
-    lister: Signer<'info>,
-    lister_mint: InterfaceAccount<'info, Mint>,
-    collection_mint: InterfaceAccount<'info, Mint>,
+    payer: Signer<'info>,
+    price_mint: InterfaceAccount<'info, Mint>,
     #[account(
         mut,
-        associated_token::authority = lister,
-        associated_token::mint = lister_mint,
-    )]
-    lister_ata: InterfaceAccount<'info, TokenAccount>,
-    #[account(
-        init_if_needed,
-        payer = lister,
-        associated_token::mint = lister_mint,
-        associated_token::authority = listing,
-    )]
-    vault: InterfaceAccount<'info, TokenAccount>,
-    #[account(
-        mut,
-        seeds = [lister_mint.key().as_ref(), seed.to_le_bytes().as_ref()],
+        seeds = [SEED_LISTING_ACCOUNT, payer.key().as_ref(), args.seed.to_le_bytes().as_ref()],
         bump
     )]
     listing: Account<'info, Listing>,
-    associated_token_program: Program<'info, AssociatedToken>,
     system_program: Program<'info, System>,
-    token_program: Interface<'info, TokenInterface>,
+
+    /// CHECK: Checked in mpl-core.
+    #[account(mut)]
+    pub asset: AccountInfo<'info>,
+
+    /// CHECK: Checked in mpl-core.
+    #[account(mut)]
+    pub collection: Option<AccountInfo<'info>>,
+
+    /// The owner or delegate of the asset.
+    pub authority: Option<Signer<'info>>,
+    
+    /// CHECK: Checked in mpl-core.
+    pub log_wrapper: Option<AccountInfo<'info>>,
+
+    /// CHECK: Checked in mpl-core.
+    #[account(address = mpl_core::ID)]
+    pub mpl_core: AccountInfo<'info>,
 }
 
 impl<'info> UpdateListing<'info> {
 
-    pub fn update_listing(&mut self, price: u64, _seed: u64) -> Result<()> {
-
-        self.listing.price = price;
+    pub fn update_listing(&mut self, args: ListingArgs) -> Result<()> {
+        self.listing.price = args.price.expect("price is missing for this listing");
 
         Ok(())
     }
-
 }
