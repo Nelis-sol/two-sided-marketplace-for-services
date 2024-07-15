@@ -20,7 +20,6 @@ describe("two-sided-marketplace-for-services", () => {
   // 4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU
   // EURC
   // HzwqbKZw8HxMN6bF2yFZNrht3c2iXXzpKcFu7uBEDKtr
-
   let priceMint = new anchor.web3.PublicKey("HzwqbKZw8HxMN6bF2yFZNrht3c2iXXzpKcFu7uBEDKtr");
 
   let secretKeyArray = new Uint8Array([79,141,93,196,162,170,88,132,242,83,26,21,24,114,41,207,138,153,163,26,19,41,63,145,100,253,242,228,49,171,129,164,58,0,210,152,87,185,2,201,28,192,62,177,99,33,74,79,93,209,103,211,85,19,194,103,242,250,136,30,250,103,28,149]);
@@ -32,9 +31,8 @@ describe("two-sided-marketplace-for-services", () => {
   const asset = anchor.web3.Keypair.generate();
   const newAsset = anchor.web3.Keypair.generate();
 
-  let umi = createUmi("https://api.devnet.solana.com");
 
-  const seedNumber = 46
+  const seedNumber = 49
   const listingSeed: any = new anchor.BN(seedNumber);
   const newListingSeed: any = new anchor.BN(seedNumber*1000);
 
@@ -65,6 +63,8 @@ describe("two-sided-marketplace-for-services", () => {
     const tx = await program.methods.createService({
       name: "1:1 Rust & Anchor lesson (1 hour videocall)",
       uri: "https://turbin3.com/",
+      royalty: 100,
+      freezable: false,
     })
       .accounts({
         asset: asset.publicKey,
@@ -127,6 +127,8 @@ describe("two-sided-marketplace-for-services", () => {
     const tx = await program.methods.createService({
       name: "1-1 Rust & Anchor lesson (1 hour videocall)",
       uri: "https://turbin3.com/",
+      royalty: 100,
+      freezable: true,
     })
       .accounts({
         asset: newAsset.publicKey,

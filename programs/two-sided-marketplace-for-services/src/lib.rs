@@ -12,6 +12,8 @@ mod constants;
 mod state;
 use state::ListingArgs;
 
+mod errors;
+
 
 declare_id!("4GVYCsgaxtqHW61wddpKtthbFZqvXhREghgE9C45YV7w");
 
