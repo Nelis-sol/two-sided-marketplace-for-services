@@ -2,6 +2,7 @@ use anchor_lang::prelude::*;
 use crate::{
     constants::SEED_LISTING_ACCOUNT,
     state::{Listing, ListingArgs},
+    helpers::{get_accountinfo_option, get_signer_option},
 };
 
 use mpl_core::{
@@ -102,13 +103,17 @@ impl<'info> BuyNow<'info> {
 
         let signer_seeds = &[&seeds[..]];
 
+        // Check if accounts do not have the default public key
+        // workaround needed to facilitate (Rust) API's that are built with Tokio
+        let collection_option = get_accountinfo_option(self.collection.clone());
+        let log_wrapper_option = get_accountinfo_option(self.log_wrapper.clone());
 
         // CPI into the Metaplex Core program with the transfer instruction
         TransferV1Cpi {
             // Public key of the NFT
             asset: &self.asset.to_account_info(),
             // Collection to which the asset/nft belongs
-            collection: self.collection.as_ref(),
+            collection: collection_option.as_ref(),
             // Payer funds the NFT creation
             payer: &self.buyer.to_account_info(),
             // Authority for authority-managed plugins
@@ -117,7 +122,7 @@ impl<'info> BuyNow<'info> {
             // Address where the NFT will be transfered to
             new_owner: &self.buyer.to_account_info(),
             system_program: Some(self.system_program.as_ref()),
-            log_wrapper: self.log_wrapper.as_ref(),
+            log_wrapper: log_wrapper_option.as_ref(),
             __program: &self.mpl_core,
             // Commands for the mpl-core program: an optional compression proof
             __args: TransferV1InstructionArgs {
@@ -133,14 +138,14 @@ impl<'info> BuyNow<'info> {
             // Public key of the NFT
             asset: &self.asset.to_account_info(),
             // Collection to which the asset/nft belongs
-            collection: self.collection.as_ref(),
+            collection: collection_option.as_ref(),
             // Authority for authority-managed plugins - in this case None as we remove the Listing PDA as authority
             // more info on https://developers.metaplex.com/core/plugins#plugin-table
             authority: None,
             // Payer funds the transaction
             payer: &self.buyer.to_account_info(),
             system_program: &self.system_program.to_account_info(),
-            log_wrapper: self.log_wrapper.as_ref(),
+            log_wrapper: log_wrapper_option.as_ref(),
             __program: &self.mpl_core,
             // Commands for the mpl-core program: remove the TransferDelegate plugin
             __args: RevokePluginAuthorityV1InstructionArgs {

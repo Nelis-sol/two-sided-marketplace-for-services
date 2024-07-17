@@ -32,7 +32,7 @@ describe("two-sided-marketplace-for-services", () => {
   const newAsset = anchor.web3.Keypair.generate();
 
 
-  const seedNumber = 49
+  const seedNumber = 55
   const listingSeed: any = new anchor.BN(seedNumber);
   const newListingSeed: any = new anchor.BN(seedNumber*1000);
 
@@ -80,6 +80,7 @@ describe("two-sided-marketplace-for-services", () => {
   });
 
 
+
   it("Can update a Service NFT", async () => {
 
     const tx = await program.methods.updateService({
@@ -92,11 +93,8 @@ describe("two-sided-marketplace-for-services", () => {
         collection: null,
         authority: null,
         payer: anchor.getProvider().publicKey,
-        owner: null,
-        updateAuthority: null,
         logWrapper: null,
       })
-      .signers([asset])
       .rpc();
     console.log("Your transaction signature: ", tx);
   });
@@ -112,11 +110,8 @@ describe("two-sided-marketplace-for-services", () => {
         collection: null,
         authority: null,
         payer: anchor.getProvider().publicKey,
-        owner: null,
-        updateAuthority: null,
         logWrapper: null,
       })
-      .signers([asset])
       .rpc();
     console.log("Your transaction signature", tx);
   });
@@ -180,7 +175,6 @@ describe("two-sided-marketplace-for-services", () => {
     )
       .accounts({
         payer: anchor.getProvider().publicKey,
-        priceMint: priceMint,
         listing: listingPDA,
         asset: newAsset.publicKey,
         collection: null,

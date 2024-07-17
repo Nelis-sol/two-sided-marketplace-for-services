@@ -5,17 +5,17 @@ use mpl_core::instructions::{
     BurnV1InstructionArgs,
 };
 
-mod instructions;
+pub mod instructions;
 use instructions::*;
-mod constants;
+pub mod constants;
 
-mod state;
+pub mod state;
 use state::ListingArgs;
 
 mod errors;
 
 
-declare_id!("4GVYCsgaxtqHW61wddpKtthbFZqvXhREghgE9C45YV7w");
+declare_id!("5Jqwh3YvJkZhDKd4MRPnxmpRJybtBs6P7zrZAtQ1jB59");
 
 #[program]
 pub mod two_sided_marketplace_for_services {

@@ -5,10 +5,10 @@ seeds = false
 skip-lint = false
 
 [programs.localnet]
-two_sided_marketplace_for_services = "4GVYCsgaxtqHW61wddpKtthbFZqvXhREghgE9C45YV7w"
+two_sided_marketplace_for_services = "5Jqwh3YvJkZhDKd4MRPnxmpRJybtBs6P7zrZAtQ1jB59"
 
 [programs.devnet]
-two_sided_marketplace_for_services = "4GVYCsgaxtqHW61wddpKtthbFZqvXhREghgE9C45YV7w"
+two_sided_marketplace_for_services = "5Jqwh3YvJkZhDKd4MRPnxmpRJybtBs6P7zrZAtQ1jB59"
 
 [registry]
 url = "https://api.apr.dev"

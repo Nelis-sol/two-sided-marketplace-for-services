@@ -2,6 +2,7 @@ use anchor_lang::prelude::*;
 use crate::{
     constants::{ROYALTY_FEE_BPS, ROYALTY_FEE_WALLET},
     errors::MarketplaceError,
+    helpers::{get_accountinfo_option, get_signer_option},
 };
 
 use mpl_core::{
@@ -43,8 +44,9 @@ impl<'info> CreateService<'info> {
 
         // Calculate the percentage of the total royalty (creator + marketplace) that goes to the creator
         let creator_royalty = args.royalty
+            .checked_mul(100).ok_or(MarketplaceError::Overflow)?
             .checked_div(ROYALTY_FEE_BPS + args.royalty).ok_or(MarketplaceError::Underflow)?
-            .checked_mul(100).ok_or(MarketplaceError::Overflow)? as u8;
+            as u8;
 
         // Prepare the Royalty plug for mpl-core
         let service_royalty = Royalties{
@@ -54,7 +56,7 @@ impl<'info> CreateService<'info> {
                 // Royalty that goes to the creator
                 Creator{address: self.payer.key(), percentage: creator_royalty}, 
                 // Royalty that goes to the marketplace
-                Creator{address: ROYALTY_FEE_WALLET, percentage: 100 - creator_royalty}],
+                Creator{address: ROYALTY_FEE_WALLET, percentage: (100 - creator_royalty)}],
             rule_set: RuleSet::None,
         };
 
@@ -67,7 +69,6 @@ impl<'info> CreateService<'info> {
 
         // Add Royalty plugin to the plugin list
         plugin_list.push(royalty_plugin);
-
 
         // Create Freeze plugin, so the original owner can freeze the service NFT / render them soulbound
         if args.freezable == true {
@@ -84,24 +85,31 @@ impl<'info> CreateService<'info> {
             plugin_list.push(freeze_plugin);
         }
 
+        // Check if accounts do not have the default public key
+        // workaround needed to facilitate (Rust) API's that are built with Tokio
+        let collection_option = get_accountinfo_option(self.collection.clone());
+        let authority_option = get_signer_option(self.authority.clone());
+        let owner_option = get_accountinfo_option(self.owner.clone());
+        let update_authority_option = get_accountinfo_option(self.update_authority.clone());
+        let log_wrapper_option = get_accountinfo_option(self.log_wrapper.clone());
 
         // CPI into Metaplex Core program with the create instruction
         CreateV1Cpi {
             // Public key of the NFT
             asset: &self.asset.to_account_info(),
             // Collection to which the asset/nft belongs
-            collection: self.collection.as_ref(),
+            collection: collection_option.as_ref(), //self.collection.as_ref(),
             // Authority for authority-managed plugins
             // more info on https://developers.metaplex.com/core/plugins#plugin-table
-            authority: self.authority.as_deref(),
+            authority: authority_option.as_deref(), // self.authority.as_deref(),
             // Payer funds the NFT creation
             payer: &self.payer.to_account_info(),
             // The address to with the NFT is minted
-            owner: self.owner.as_ref(),
+            owner: owner_option.as_ref(), // self.owner.as_ref(),
             // Address that can update the Name and URI
-            update_authority: self.update_authority.as_ref(),
+            update_authority: update_authority_option.as_ref(), // self.update_authority.as_ref(),
             system_program: &self.system_program.to_account_info(),
-            log_wrapper: self.log_wrapper.as_ref(),
+            log_wrapper: log_wrapper_option.as_ref(),
             __program: &self.mpl_core,
             // Commands for the mpl-core program: data to add to the NFT and (optional) plugins to add
             __args: CreateV1InstructionArgs {

@@ -12,8 +12,6 @@ use anchor_spl::token_interface::Mint;
 pub struct UpdateListing<'info> {
     #[account(mut)]
     payer: Signer<'info>,
-    // Mint can be of the type Token or Token2022
-    price_mint: InterfaceAccount<'info, Mint>,
     #[account(
         mut,
         // Listing PDA requires signer/payer as seed and a identifier/seed

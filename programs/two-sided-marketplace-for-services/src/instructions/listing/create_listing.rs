@@ -2,6 +2,7 @@ use anchor_lang::prelude::*;
 use crate::{
     errors::MarketplaceError, state::{Listing, ListingArgs},
     constants::SEED_LISTING_ACCOUNT,
+    helpers::{get_accountinfo_option, get_signer_option},
 };
 
 use mpl_core::{
@@ -77,19 +78,26 @@ impl<'info> CreateListing<'info> {
             init_authority: Some(PluginAuthority::Address { address: self.listing.key() }),
         };
 
+
+        // Check if accounts do not have the default public key
+        // workaround needed to facilitate (Rust) API's that are built with Tokio
+        let collection_option = get_accountinfo_option(self.collection.clone());
+        let authority_option = get_signer_option(self.authority.clone());
+        let log_wrapper_option = get_accountinfo_option(self.log_wrapper.clone());
+
         // CPI into the Metaplex Core program with the add plugin instruction
         AddPluginV1Cpi {
             // Public key of the NFT
             asset: &self.asset.to_account_info(),
             // Collection to which the asset/nft belongs
-            collection: self.collection.as_ref(),
+            collection: collection_option.as_ref(),
             // Authority for authority-managed plugins
             // more info on https://developers.metaplex.com/core/plugins#plugin-table
-            authority: self.authority.as_deref(),
+            authority: authority_option.as_deref(),
             // Payer funds the NFT creation
             payer: &self.payer.to_account_info(),
             system_program: &self.system_program.to_account_info(),
-            log_wrapper: self.log_wrapper.as_ref(),
+            log_wrapper: log_wrapper_option.as_ref(),
             __program: &self.mpl_core,
             // Command for the mpl-core program: the TransferDelegate plugin we want to add
             __args: transfer_delegate_plugin,
